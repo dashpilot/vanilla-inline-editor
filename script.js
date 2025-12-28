@@ -33,6 +33,7 @@ class InlineRichTextEditor {
 		};
 
 		this.editor = findElement(editorSelector);
+		this.editorSelector = editorSelector; // Store selector for later use
 
 		if (!this.editor) {
 			console.error(`Editor element with selector "${editorSelector || 'undefined'}" not found`);
@@ -40,7 +41,10 @@ class InlineRichTextEditor {
 		}
 
 		// Automatically set contentEditable and spellcheck on the editor element(s)
-		this.setupEditorElement(editorSelector);
+		this.editorElements = this.setupEditorElement(editorSelector); // Store all editable elements
+		if (!this.editorElements || this.editorElements.length === 0) {
+			this.editorElements = [this.editor];
+		}
 
 		// Try to find existing toolbar, or create it dynamically
 		this.toolbar = findElement(toolbarSelector);
@@ -130,6 +134,8 @@ class InlineRichTextEditor {
 			element.setAttribute('contenteditable', 'true');
 			element.setAttribute('spellcheck', 'false');
 		});
+
+		return elements; // Return all editable elements
 	}
 
 	injectEditorStyles() {
@@ -354,8 +360,7 @@ class InlineRichTextEditor {
             }
 
             .editor-plus-button {
-                position: absolute;
-                left: -32px;
+                position: fixed;
                 width: 24px;
                 height: 24px;
                 background: white;
@@ -382,8 +387,7 @@ class InlineRichTextEditor {
             }
 
             .plus-menu {
-                position: absolute;
-                left: -32px;
+                position: fixed;
                 background: white;
                 border: 1px solid #dee2e6;
                 border-radius: 6px;
@@ -707,19 +711,108 @@ class InlineRichTextEditor {
 		this.buildToolbar();
 		this.createPlusButton();
 		this.setupEventListeners();
+		this.setupImageClickHandlers();
 		this.updateButtonStates();
 		this.hideToolbar();
 	}
 
+	setupImageClickHandlers() {
+		// Helper to setup click handler on an image
+		const setupImageClick = (img) => {
+			// Only add listener if not already added
+			if (!img.hasAttribute('data-image-click-handler')) {
+				img.setAttribute('data-image-click-handler', 'true');
+				img.addEventListener('click', (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					this.showImageReplaceModal(img);
+				});
+				img.style.cursor = 'pointer';
+			}
+		};
+
+		// Find all editor elements using the same logic as setupEditorElement
+		const findAllEditorElements = () => {
+			if (!this.editorSelector) return [this.editor];
+
+			// Helper function to find all elements matching a selector (same as setupEditorElement)
+			const findAllElements = (selector) => {
+				if (!selector) return [];
+				if (Array.isArray(selector)) {
+					for (const sel of selector) {
+						const elements = findAllElements(sel);
+						if (elements.length > 0) return elements;
+					}
+					return [];
+				}
+				if (typeof selector !== 'string') return [];
+
+				if (selector.startsWith('#')) {
+					const element = document.getElementById(selector.substring(1));
+					return element ? [element] : [];
+				}
+				if (selector.startsWith('.')) {
+					return Array.from(document.querySelectorAll(selector));
+				}
+				const byId = document.getElementById(selector);
+				if (byId) return [byId];
+				return Array.from(document.querySelectorAll(`.${selector}`));
+			};
+
+			return findAllElements(this.editorSelector);
+		};
+
+		// Setup click handlers for existing images
+		const setupImages = () => {
+			const editorElements = findAllEditorElements();
+
+			editorElements.forEach((editorEl) => {
+				if (!editorEl) return;
+
+				const images = editorEl.querySelectorAll('img');
+				images.forEach(setupImageClick);
+			});
+		};
+
+		// Setup images initially
+		setupImages();
+
+		// Use MutationObserver to handle dynamically added images
+		const editorElements = findAllEditorElements();
+		editorElements.forEach((editorEl) => {
+			if (!editorEl) return;
+
+			const observer = new MutationObserver((mutations) => {
+				mutations.forEach((mutation) => {
+					mutation.addedNodes.forEach((node) => {
+						if (node.nodeType === Node.ELEMENT_NODE) {
+							if (node.tagName === 'IMG') {
+								setupImageClick(node);
+							}
+							// Check for images within added nodes
+							const images = node.querySelectorAll ? node.querySelectorAll('img') : [];
+							images.forEach(setupImageClick);
+						}
+					});
+				});
+			});
+
+			observer.observe(editorEl, {
+				childList: true,
+				subtree: true
+			});
+		});
+	}
+
 	createPlusButton() {
-		// Create plus button - append to editor container for proper positioning
+		// Create plus button - append to body for proper positioning (works with overflow: hidden)
 		this.plusButton = document.createElement('button');
 		this.plusButton.className = 'editor-plus-button';
 		this.plusButton.innerHTML = '<i class="bi bi-plus"></i>';
 		this.plusButton.type = 'button';
-		this.editor.parentElement.appendChild(this.plusButton);
+		document.body.appendChild(this.plusButton);
 
-		// Create plus menu
+		// Create plus menu - append to body for proper positioning (works with overflow: hidden)
 		this.plusMenu = document.createElement('div');
 		this.plusMenu.className = 'plus-menu';
 		this.plusMenu.innerHTML = `
@@ -740,7 +833,7 @@ class InlineRichTextEditor {
 				<span>Image</span>
 			</div>
 		`;
-		this.editor.parentElement.appendChild(this.plusMenu);
+		document.body.appendChild(this.plusMenu);
 
 		// Handle plus button click
 		this.plusButton.addEventListener('click', (e) => {
@@ -805,6 +898,7 @@ class InlineRichTextEditor {
 
 		// Use saved target element if provided, otherwise find it
 		let targetElement = savedTargetElement;
+		let activeEditor = this.editor;
 
 		if (!targetElement) {
 			// Use saved range if provided, otherwise get current selection
@@ -826,16 +920,32 @@ class InlineRichTextEditor {
 				targetElement = targetElement.parentElement;
 			}
 
-			while (targetElement && targetElement !== this.editor) {
+			// Find which editor contains this element
+			for (const editorEl of this.editorElements) {
+				if (editorEl.contains(targetElement) || targetElement === editorEl) {
+					activeEditor = editorEl;
+					break;
+				}
+			}
+
+			while (targetElement && targetElement !== activeEditor) {
 				if (['P', 'H1', 'H2', 'DIV'].includes(targetElement.tagName)) {
 					break;
 				}
 				targetElement = targetElement.parentElement;
 			}
+		} else {
+			// Find which editor contains the saved target element
+			for (const editorEl of this.editorElements) {
+				if (editorEl.contains(targetElement) || targetElement === editorEl) {
+					activeEditor = editorEl;
+					break;
+				}
+			}
 		}
 
-		if (!targetElement || targetElement === this.editor) {
-			targetElement = this.editor.querySelector('p') || this.editor;
+		if (!targetElement || targetElement === activeEditor) {
+			targetElement = activeEditor.querySelector('p') || activeEditor;
 		}
 
 		// Create new element
@@ -850,11 +960,11 @@ class InlineRichTextEditor {
 		if (targetElement.parentNode) {
 			targetElement.parentNode.insertBefore(newElement, targetElement.nextSibling);
 		} else {
-			this.editor.appendChild(newElement);
+			activeEditor.appendChild(newElement);
 		}
 
 		// Focus the new element and place cursor
-		this.editor.focus();
+		activeEditor.focus();
 		requestAnimationFrame(() => {
 			const newRange = document.createRange();
 			newRange.selectNodeContents(newElement);
@@ -862,7 +972,7 @@ class InlineRichTextEditor {
 			const sel = window.getSelection();
 			sel.removeAllRanges();
 			sel.addRange(newRange);
-			this.editor.focus();
+			activeEditor.focus();
 			setTimeout(() => {
 				this.checkAndShowPlusButton();
 			}, 10);
@@ -967,21 +1077,33 @@ class InlineRichTextEditor {
 				// Resize image using Pica
 				const resizedDataUrl = await this.resizeImage(file, this.config.maxImageWidth);
 
-				this.editor.focus();
-
 				const selection = window.getSelection();
 				let targetElement = null;
+				let activeEditor = this.editor;
 
 				if (selection.rangeCount > 0) {
 					const range = selection.getRangeAt(0);
 					targetElement = range.commonAncestorContainer;
+
+					// Find which editor contains this element
+					for (const editorEl of this.editorElements) {
+						if (
+							editorEl.contains(targetElement) ||
+							targetElement === editorEl ||
+							(targetElement.nodeType === Node.TEXT_NODE &&
+								editorEl.contains(targetElement.parentNode))
+						) {
+							activeEditor = editorEl;
+							break;
+						}
+					}
 
 					// Find the block element
 					if (targetElement.nodeType === Node.TEXT_NODE) {
 						targetElement = targetElement.parentElement;
 					}
 
-					while (targetElement && targetElement !== this.editor) {
+					while (targetElement && targetElement !== activeEditor) {
 						if (['P', 'H1', 'H2', 'DIV'].includes(targetElement.tagName)) {
 							break;
 						}
@@ -989,9 +1111,11 @@ class InlineRichTextEditor {
 					}
 				}
 
-				if (!targetElement || targetElement === this.editor) {
-					targetElement = this.editor.querySelector('p') || this.editor;
+				if (!targetElement || targetElement === activeEditor) {
+					targetElement = activeEditor.querySelector('p') || activeEditor;
 				}
+
+				activeEditor.focus();
 
 				// Create image element
 				const img = document.createElement('img');
@@ -999,13 +1123,22 @@ class InlineRichTextEditor {
 				img.alt = altText || 'Image';
 				img.style.maxWidth = '100%';
 				img.style.height = 'auto';
+				img.style.cursor = 'pointer';
 				img.contentEditable = 'false';
+				img.setAttribute('data-image-click-handler', 'true');
+
+				// Add click handler for replacement
+				img.addEventListener('click', (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					this.showImageReplaceModal(img);
+				});
 
 				// Insert after the target element
 				if (targetElement.parentNode) {
 					targetElement.parentNode.insertBefore(img, targetElement.nextSibling);
 				} else {
-					this.editor.appendChild(img);
+					activeEditor.appendChild(img);
 				}
 
 				closeModal();
@@ -1015,6 +1148,126 @@ class InlineRichTextEditor {
 				alert('Error processing image. Please try again.');
 				insertButton.disabled = false;
 				insertButton.textContent = 'Upload & Insert';
+			}
+		});
+
+		// Handle Escape key
+		altInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				closeModal();
+			}
+		});
+	}
+
+	showImageReplaceModal(targetImg) {
+		// Create modal for image replacement
+		const modal = document.createElement('div');
+		modal.className = 'link-modal-overlay';
+		modal.innerHTML = `
+			<div class="link-modal">
+				<div class="link-modal-header">
+					<h3>Replace Image</h3>
+					<button class="link-modal-close" type="button">&times;</button>
+				</div>
+				<div class="link-modal-body">
+					<div class="link-modal-field">
+						<label for="replace-image-alt">Alt Text</label>
+						<input type="text" id="replace-image-alt" value="${targetImg.alt || ''}" placeholder="Image description">
+					</div>
+					<div class="file-upload-wrapper">
+						<input type="file" id="replace-image-file" accept="image/*" style="display: none;">
+						<button type="button" class="file-upload-button" id="replace-file-upload-trigger">
+							<i class="bi bi-upload"></i> Choose New Image
+						</button>
+						<span class="file-name" id="replace-file-name"></span>
+					</div>
+					<div class="image-preview" id="replace-image-preview" style="display: none; margin-top: 12px;">
+						<img id="replace-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 4px;">
+					</div>
+				</div>
+				<div class="link-modal-footer">
+					<button class="link-modal-cancel" type="button">Cancel</button>
+					<button class="link-modal-insert" type="button" disabled>Replace Image</button>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const fileInput = modal.querySelector('#replace-image-file');
+		const fileUploadTrigger = modal.querySelector('#replace-file-upload-trigger');
+		const fileName = modal.querySelector('#replace-file-name');
+		const altInput = modal.querySelector('#replace-image-alt');
+		const preview = modal.querySelector('#replace-image-preview');
+		const previewImg = modal.querySelector('#replace-preview-img');
+		const replaceButton = modal.querySelector('.link-modal-insert');
+
+		// Trigger file input when button is clicked
+		fileUploadTrigger.addEventListener('click', () => {
+			fileInput.click();
+		});
+
+		// Preview image when file is selected
+		fileInput.addEventListener('change', (e) => {
+			const file = e.target.files[0];
+			if (file && file.type.startsWith('image/')) {
+				fileName.textContent = file.name;
+				const reader = new FileReader();
+				reader.onload = (event) => {
+					previewImg.src = event.target.result;
+					preview.style.display = 'block';
+					replaceButton.disabled = false;
+				};
+				reader.readAsDataURL(file);
+			} else {
+				preview.style.display = 'none';
+				fileName.textContent = '';
+				replaceButton.disabled = true;
+			}
+		});
+
+		// Close handlers
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		modal.querySelector('.link-modal-close').addEventListener('click', closeModal);
+		modal.querySelector('.link-modal-cancel').addEventListener('click', closeModal);
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) {
+				closeModal();
+			}
+		});
+
+		// Replace image handler
+		replaceButton.addEventListener('click', async () => {
+			const file = fileInput.files[0];
+			const altText = altInput.value.trim();
+
+			if (!file) {
+				alert('Please select an image file');
+				return;
+			}
+
+			// Show loading state
+			replaceButton.disabled = true;
+			replaceButton.textContent = 'Processing...';
+
+			try {
+				// Resize image using Pica
+				const resizedDataUrl = await this.resizeImage(file, this.config.maxImageWidth);
+
+				// Replace the image src and alt
+				targetImg.src = resizedDataUrl;
+				targetImg.alt = altText || 'Image';
+
+				closeModal();
+			} catch (error) {
+				console.error('Error processing image:', error);
+				alert('Error processing image. Please try again.');
+				replaceButton.disabled = false;
+				replaceButton.textContent = 'Replace Image';
 			}
 		});
 
@@ -1121,19 +1374,19 @@ class InlineRichTextEditor {
 		if (!this.plusButton || !element) return;
 
 		const rect = element.getBoundingClientRect();
-		const editorRect = this.editor.getBoundingClientRect();
-		const containerRect = this.editor.parentElement.getBoundingClientRect();
 
-		// Position the plus button to the left of the element, relative to editor container
-		// Use negative left positioning but ensure container allows overflow
-		const topOffset = rect.top - containerRect.top + this.editor.scrollTop;
-		this.plusButton.style.top = `${topOffset}px`;
-		this.plusButton.style.left = '-32px';
+		// Position the plus button to the left of the element using fixed positioning
+		// This works even when the container has overflow: hidden
+		const buttonLeft = rect.left - 32; // 32px to the left of the element
+		const buttonTop = rect.top;
+
+		this.plusButton.style.top = `${buttonTop}px`;
+		this.plusButton.style.left = `${buttonLeft}px`;
 		this.plusButton.classList.add('visible');
 
 		// Position menu below button
-		this.plusMenu.style.top = `${topOffset + 24}px`;
-		this.plusMenu.style.left = '-32px';
+		this.plusMenu.style.top = `${buttonTop + 24}px`;
+		this.plusMenu.style.left = `${buttonLeft}px`;
 	}
 
 	hidePlusButton() {
@@ -1172,8 +1425,22 @@ class InlineRichTextEditor {
 			element = element.parentElement;
 		}
 
+		// Check if element is within any of the editable editors
+		let currentEditor = null;
+		for (const editorEl of this.editorElements) {
+			if (editorEl.contains(element) || element === editorEl) {
+				currentEditor = editorEl;
+				break;
+			}
+		}
+
+		if (!currentEditor) {
+			this.hidePlusButton();
+			return;
+		}
+
 		// Find the block element
-		while (element && element !== this.editor) {
+		while (element && element !== currentEditor) {
 			if (['P', 'H1', 'H2', 'DIV'].includes(element.tagName)) {
 				// Check if cursor is at the start of the element
 				const rangeAtStart = document.createRange();
@@ -1371,7 +1638,28 @@ class InlineRichTextEditor {
 	}
 
 	formatText(command, value = null) {
-		this.editor.focus();
+		// Find the active editor that contains the current selection
+		const selection = window.getSelection();
+		let activeEditor = this.editor;
+
+		if (selection && selection.rangeCount > 0) {
+			const range = selection.getRangeAt(0);
+			const container = range.commonAncestorContainer;
+
+			// Find which editor element contains this selection
+			for (const editorEl of this.editorElements) {
+				if (
+					editorEl.contains(container) ||
+					container === editorEl ||
+					(container.nodeType === Node.TEXT_NODE && editorEl.contains(container.parentNode))
+				) {
+					activeEditor = editorEl;
+					break;
+				}
+			}
+		}
+
+		activeEditor.focus();
 
 		if (value !== null) {
 			document.execCommand(command, false, value);
@@ -1470,7 +1758,30 @@ class InlineRichTextEditor {
 				return;
 			}
 
-			this.editor.focus();
+			// Find the active editor that contains the selection/link
+			let activeEditor = this.editor;
+			if (savedRange) {
+				const container = savedRange.commonAncestorContainer;
+				for (const editorEl of this.editorElements) {
+					if (
+						editorEl.contains(container) ||
+						container === editorEl ||
+						(container.nodeType === Node.TEXT_NODE && editorEl.contains(container.parentNode))
+					) {
+						activeEditor = editorEl;
+						break;
+					}
+				}
+			} else if (existingLinkNode) {
+				for (const editorEl of this.editorElements) {
+					if (editorEl.contains(existingLinkNode)) {
+						activeEditor = editorEl;
+						break;
+					}
+				}
+			}
+
+			activeEditor.focus();
 
 			// Use the saved link node and range from before modal opened
 			if (existingLinkNode) {
@@ -1611,57 +1922,60 @@ class InlineRichTextEditor {
 			});
 		});
 
-		// Also listen to mouse and keyboard events
-		this.editor.addEventListener('mouseup', (e) => {
-			requestAnimationFrame(() => {
-				setTimeout(() => {
-					this.handleSelectionChange();
-					this.checkAndShowPlusButton();
-				}, 100);
-			});
-		});
-		this.editor.addEventListener('keyup', (e) => {
-			requestAnimationFrame(() => {
-				setTimeout(() => {
-					this.handleSelectionChange();
-					this.checkAndShowPlusButton();
-				}, 50);
-			});
-		});
-
-		// Handle Enter key to show plus button on new paragraph
-		this.editor.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-				setTimeout(() => {
-					this.checkAndShowPlusButton();
-				}, 10);
-			}
-		});
-
-		// Also listen on mousemove while selecting (for drag selection)
-		let isSelecting = false;
-		this.editor.addEventListener('mousedown', () => {
-			isSelecting = true;
-		});
-		this.editor.addEventListener('mousemove', () => {
-			if (isSelecting) {
+		// Also listen to mouse and keyboard events on all editable elements
+		this.editorElements.forEach((editorEl) => {
+			editorEl.addEventListener('mouseup', (e) => {
 				requestAnimationFrame(() => {
-					this.handleSelectionChange();
+					setTimeout(() => {
+						this.handleSelectionChange();
+						this.checkAndShowPlusButton();
+					}, 100);
 				});
-			}
-		});
-		this.editor.addEventListener('mouseup', () => {
-			isSelecting = false;
+			});
+			editorEl.addEventListener('keyup', (e) => {
+				requestAnimationFrame(() => {
+					setTimeout(() => {
+						this.handleSelectionChange();
+						this.checkAndShowPlusButton();
+					}, 50);
+				});
+			});
+
+			// Handle Enter key to show plus button on new paragraph
+			editorEl.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') {
+					setTimeout(() => {
+						this.checkAndShowPlusButton();
+					}, 10);
+				}
+			});
+
+			// Also listen on mousemove while selecting (for drag selection)
+			let isSelecting = false;
+			editorEl.addEventListener('mousedown', () => {
+				isSelecting = true;
+			});
+			editorEl.addEventListener('mousemove', () => {
+				if (isSelecting) {
+					requestAnimationFrame(() => {
+						this.handleSelectionChange();
+					});
+				}
+			});
+			editorEl.addEventListener('mouseup', () => {
+				isSelecting = false;
+			});
 		});
 
 		// Hide toolbar when clicking outside
 		document.addEventListener('mousedown', (e) => {
-			if (!this.toolbar.contains(e.target) && !this.editor.contains(e.target)) {
+			const isInAnyEditor = this.editorElements.some((editorEl) => editorEl.contains(e.target));
+			if (!this.toolbar.contains(e.target) && !isInAnyEditor) {
 				this.hideToolbar();
 			}
 			// Hide plus button when clicking outside editor
 			if (
-				!this.editor.contains(e.target) &&
+				!isInAnyEditor &&
 				!this.plusButton.contains(e.target) &&
 				!this.plusMenu.contains(e.target)
 			) {
@@ -1682,26 +1996,28 @@ class InlineRichTextEditor {
 			true
 		);
 
-		// Handle keyboard shortcuts
-		this.editor.addEventListener('keydown', (e) => {
-			this.config.buttons.forEach((buttonConfig) => {
-				if (buttonConfig.keyboardShortcut) {
-					const shortcut = buttonConfig.keyboardShortcut;
-					const metaKey = shortcut.metaKey && (e.metaKey || e.ctrlKey);
-					const ctrlKey = shortcut.ctrlKey && (e.ctrlKey || e.metaKey);
-					const shiftKey = shortcut.shiftKey && e.shiftKey;
-					const altKey = shortcut.altKey && e.altKey;
+		// Handle keyboard shortcuts on all editable elements
+		this.editorElements.forEach((editorEl) => {
+			editorEl.addEventListener('keydown', (e) => {
+				this.config.buttons.forEach((buttonConfig) => {
+					if (buttonConfig.keyboardShortcut) {
+						const shortcut = buttonConfig.keyboardShortcut;
+						const metaKey = shortcut.metaKey && (e.metaKey || e.ctrlKey);
+						const ctrlKey = shortcut.ctrlKey && (e.ctrlKey || e.metaKey);
+						const shiftKey = shortcut.shiftKey && e.shiftKey;
+						const altKey = shortcut.altKey && e.altKey;
 
-					if (e.key.toLowerCase() === shortcut.key.toLowerCase()) {
-						if (metaKey || ctrlKey) {
-							if (!shiftKey && !altKey) {
-								e.preventDefault();
-								buttonConfig.action();
-								this.updateButtonStates();
+						if (e.key.toLowerCase() === shortcut.key.toLowerCase()) {
+							if (metaKey || ctrlKey) {
+								if (!shiftKey && !altKey) {
+									e.preventDefault();
+									buttonConfig.action();
+									this.updateButtonStates();
+								}
 							}
 						}
 					}
-				}
+				});
 			});
 		});
 	}
@@ -1743,14 +2059,18 @@ class InlineRichTextEditor {
 			const startContainer = range.startContainer;
 			const endContainer = range.endContainer;
 
-			// Helper function to check if a node is in the editor
+			// Helper function to check if a node is in any of the editable elements
 			const nodeInEditor = (node) => {
 				if (!node) return false;
-				if (node === this.editor) return true;
-				if (node.nodeType === Node.TEXT_NODE) {
-					return this.editor.contains(node.parentNode) || node.parentNode === this.editor;
+				for (const editorEl of this.editorElements) {
+					if (node === editorEl) return true;
+					if (node.nodeType === Node.TEXT_NODE) {
+						if (editorEl.contains(node.parentNode) || node.parentNode === editorEl) return true;
+					} else {
+						if (editorEl.contains(node)) return true;
+					}
 				}
-				return this.editor.contains(node);
+				return false;
 			};
 
 			isInEditor =

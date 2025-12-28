@@ -12,17 +12,45 @@
 		<script src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js"></script>
 	</head>
 	<body>
-		<div class="editor-container">
-			<div class="editor-content" id="editor">
-				<p>Start typing here... Select text to see the formatting toolbar appear.</p>
+		<div class="cards-container">
+			<div class="card editable-card">
+				<div class="card-image">
+					<img src="https://via.placeholder.com/400x300?text=Card+1" alt="Card 1 image" />
+				</div>
+				<div class="card-content">
+					<h2 class="card-title">Card Title 1</h2>
+					<p class="card-description">
+						Click anywhere on the card to edit. Click on the image to replace it.
+					</p>
+				</div>
+			</div>
+			<div class="card editable-card">
+				<div class="card-image">
+					<img src="https://via.placeholder.com/400x300?text=Card+2" alt="Card 2 image" />
+				</div>
+				<div class="card-content">
+					<h2 class="card-title">Card Title 2</h2>
+					<p class="card-description">
+						Edit this card by clicking on the text. Replace the image by clicking on it.
+					</p>
+				</div>
+			</div>
+			<div class="card editable-card">
+				<div class="card-image">
+					<img src="https://via.placeholder.com/400x300?text=Card+3" alt="Card 3 image" />
+				</div>
+				<div class="card-content">
+					<h2 class="card-title">Card Title 3</h2>
+					<p class="card-description">All three cards are editable using the class selector.</p>
+				</div>
 			</div>
 		</div>
 		<script src="script.js"></script>
 		<script>
 			// Initialize the editor when DOM is ready
 			document.addEventListener('DOMContentLoaded', () => {
-				// Toolbar will be created dynamically if not provided
-				const editor = new InlineRichTextEditor('editor');
+				// All cards with class 'editable-card' will be made editable
+				const editor = new InlineRichTextEditor('.editable-card');
 
 				// Example: You can customize the buttons by passing a config
 				// const customEditor = new InlineRichTextEditor('editor', 'toolbar', {
