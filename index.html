@@ -15,7 +15,11 @@
 		<div class="cards-container">
 			<div class="card editable-card">
 				<div class="card-image">
-					<img src="https://via.placeholder.com/400x300?text=Card+1" alt="Card 1 image" />
+					<img
+						src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+						alt="Card 1 image"
+						class="image"
+					/>
 				</div>
 				<div class="card-content">
 					<h2 class="card-title">Card Title 1</h2>
@@ -26,7 +30,11 @@
 			</div>
 			<div class="card editable-card">
 				<div class="card-image">
-					<img src="https://via.placeholder.com/400x300?text=Card+2" alt="Card 2 image" />
+					<img
+						src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=300&fit=crop"
+						alt="Card 2 image"
+						class="image"
+					/>
 				</div>
 				<div class="card-content">
 					<h2 class="card-title">Card Title 2</h2>
@@ -37,7 +45,11 @@
 			</div>
 			<div class="card editable-card">
 				<div class="card-image">
-					<img src="https://via.placeholder.com/400x300?text=Card+3" alt="Card 3 image" />
+					<img
+						src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=300&fit=crop"
+						alt="Card 3 image"
+						class="image"
+					/>
 				</div>
 				<div class="card-content">
 					<h2 class="card-title">Card Title 3</h2>
@@ -50,7 +62,11 @@
 			// Initialize the editor when DOM is ready
 			document.addEventListener('DOMContentLoaded', () => {
 				// All cards with class 'editable-card' will be made editable
-				const editor = new InlineRichTextEditor('.editable-card');
+				const editor = new InlineRichTextEditor('.card-content');
+
+				// Initialize standalone image editor for card images
+				// This allows replacing images without making them part of the text editor
+				const imageEditor = new ImageEditor('.image');
 
 				// Example: You can customize the buttons by passing a config
 				// const customEditor = new InlineRichTextEditor('editor', 'toolbar', {

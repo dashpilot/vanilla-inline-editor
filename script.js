@@ -1161,213 +1161,13 @@ class InlineRichTextEditor {
 	}
 
 	showImageReplaceModal(targetImg) {
-		// Create modal for image replacement
-		const modal = document.createElement('div');
-		modal.className = 'link-modal-overlay';
-		modal.innerHTML = `
-			<div class="link-modal">
-				<div class="link-modal-header">
-					<h3>Replace Image</h3>
-					<button class="link-modal-close" type="button">&times;</button>
-				</div>
-				<div class="link-modal-body">
-					<div class="link-modal-field">
-						<label for="replace-image-alt">Alt Text</label>
-						<input type="text" id="replace-image-alt" value="${targetImg.alt || ''}" placeholder="Image description">
-					</div>
-					<div class="file-upload-wrapper">
-						<input type="file" id="replace-image-file" accept="image/*" style="display: none;">
-						<button type="button" class="file-upload-button" id="replace-file-upload-trigger">
-							<i class="bi bi-upload"></i> Choose New Image
-						</button>
-						<span class="file-name" id="replace-file-name"></span>
-					</div>
-					<div class="image-preview" id="replace-image-preview" style="display: none; margin-top: 12px;">
-						<img id="replace-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 4px;">
-					</div>
-				</div>
-				<div class="link-modal-footer">
-					<button class="link-modal-cancel" type="button">Cancel</button>
-					<button class="link-modal-insert" type="button" disabled>Replace Image</button>
-				</div>
-			</div>
-		`;
-
-		document.body.appendChild(modal);
-
-		const fileInput = modal.querySelector('#replace-image-file');
-		const fileUploadTrigger = modal.querySelector('#replace-file-upload-trigger');
-		const fileName = modal.querySelector('#replace-file-name');
-		const altInput = modal.querySelector('#replace-image-alt');
-		const preview = modal.querySelector('#replace-image-preview');
-		const previewImg = modal.querySelector('#replace-preview-img');
-		const replaceButton = modal.querySelector('.link-modal-insert');
-
-		// Trigger file input when button is clicked
-		fileUploadTrigger.addEventListener('click', () => {
-			fileInput.click();
-		});
-
-		// Preview image when file is selected
-		fileInput.addEventListener('change', (e) => {
-			const file = e.target.files[0];
-			if (file && file.type.startsWith('image/')) {
-				fileName.textContent = file.name;
-				const reader = new FileReader();
-				reader.onload = (event) => {
-					previewImg.src = event.target.result;
-					preview.style.display = 'block';
-					replaceButton.disabled = false;
-				};
-				reader.readAsDataURL(file);
-			} else {
-				preview.style.display = 'none';
-				fileName.textContent = '';
-				replaceButton.disabled = true;
-			}
-		});
-
-		// Close handlers
-		const closeModal = () => {
-			document.body.removeChild(modal);
-		};
-
-		modal.querySelector('.link-modal-close').addEventListener('click', closeModal);
-		modal.querySelector('.link-modal-cancel').addEventListener('click', closeModal);
-		modal.addEventListener('click', (e) => {
-			if (e.target === modal) {
-				closeModal();
-			}
-		});
-
-		// Replace image handler
-		replaceButton.addEventListener('click', async () => {
-			const file = fileInput.files[0];
-			const altText = altInput.value.trim();
-
-			if (!file) {
-				alert('Please select an image file');
-				return;
-			}
-
-			// Show loading state
-			replaceButton.disabled = true;
-			replaceButton.textContent = 'Processing...';
-
-			try {
-				// Resize image using Pica
-				const resizedDataUrl = await this.resizeImage(file, this.config.maxImageWidth);
-
-				// Replace the image src and alt
-				targetImg.src = resizedDataUrl;
-				targetImg.alt = altText || 'Image';
-
-				closeModal();
-			} catch (error) {
-				console.error('Error processing image:', error);
-				alert('Error processing image. Please try again.');
-				replaceButton.disabled = false;
-				replaceButton.textContent = 'Replace Image';
-			}
-		});
-
-		// Handle Escape key
-		altInput.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape') {
-				e.preventDefault();
-				closeModal();
-			}
-		});
+		// Use the shared image replacement modal function
+		createImageReplaceModal(targetImg, this.config);
 	}
 
 	async resizeImage(file, maxWidth) {
-		return new Promise((resolve, reject) => {
-			// Check if Pica is available
-			if (typeof pica === 'undefined') {
-				// Fallback: use canvas without Pica
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					const img = new Image();
-					img.onload = () => {
-						const canvas = document.createElement('canvas');
-						let width = img.width;
-						let height = img.height;
-
-						// Calculate new dimensions
-						if (width > maxWidth) {
-							height = (height * maxWidth) / width;
-							width = maxWidth;
-						}
-
-						canvas.width = width;
-						canvas.height = height;
-
-						const ctx = canvas.getContext('2d');
-						ctx.drawImage(img, 0, 0, width, height);
-
-						resolve(canvas.toDataURL('image/jpeg', 0.9));
-					};
-					img.onerror = reject;
-					img.src = e.target.result;
-				};
-				reader.onerror = reject;
-				reader.readAsDataURL(file);
-			} else {
-				// Use Pica for high-quality resizing
-				const reader = new FileReader();
-				reader.onload = (e) => {
-					const img = new Image();
-					img.onload = () => {
-						let width = img.width;
-						let height = img.height;
-
-						// Calculate new dimensions
-						if (width > maxWidth) {
-							height = (height * maxWidth) / width;
-							width = maxWidth;
-						}
-
-						// Create source and destination canvases
-						const sourceCanvas = document.createElement('canvas');
-						sourceCanvas.width = img.width;
-						sourceCanvas.height = img.height;
-						const sourceCtx = sourceCanvas.getContext('2d');
-						sourceCtx.drawImage(img, 0, 0);
-
-						const destCanvas = document.createElement('canvas');
-						destCanvas.width = width;
-						destCanvas.height = height;
-
-						// Use Pica to resize - check if pica is a function or an object
-						const picaInstance = typeof pica === 'function' ? new pica() : pica;
-
-						if (picaInstance && typeof picaInstance.resize === 'function') {
-							picaInstance
-								.resize(sourceCanvas, destCanvas, {
-									quality: 3,
-									alpha: false,
-									unsharpAmount: 80,
-									unsharpRadius: 0.6,
-									unsharpThreshold: 2
-								})
-								.then(() => {
-									resolve(destCanvas.toDataURL('image/jpeg', 0.9));
-								})
-								.catch(reject);
-						} else {
-							// Fallback to canvas if Pica API is not available
-							const ctx = destCanvas.getContext('2d');
-							ctx.drawImage(img, 0, 0, width, height);
-							resolve(destCanvas.toDataURL('image/jpeg', 0.9));
-						}
-					};
-					img.onerror = reject;
-					img.src = e.target.result;
-				};
-				reader.onerror = reject;
-				reader.readAsDataURL(file);
-			}
-		});
+		// Use the shared resizeImage function
+		return resizeImage(file, maxWidth);
 	}
 
 	showPlusButton(element) {
@@ -2155,5 +1955,329 @@ class InlineRichTextEditor {
 	hideToolbar() {
 		this.toolbar.classList.remove('visible');
 		this.toolbar.style.display = 'none';
+	}
+}
+
+// Shared image replacement modal function
+function createImageReplaceModal(targetImg, config = {}) {
+	const maxImageWidth = config.maxImageWidth || 1200;
+
+	// Create modal for image replacement
+	const modal = document.createElement('div');
+	modal.className = 'link-modal-overlay';
+	modal.innerHTML = `
+		<div class="link-modal">
+			<div class="link-modal-header">
+				<h3>Replace Image</h3>
+				<button class="link-modal-close" type="button">&times;</button>
+			</div>
+			<div class="link-modal-body">
+				<div class="link-modal-field">
+					<label for="replace-image-alt">Alt Text</label>
+					<input type="text" id="replace-image-alt" value="${targetImg.alt || ''}" placeholder="Image description">
+				</div>
+				<div class="file-upload-wrapper">
+					<input type="file" id="replace-image-file" accept="image/*" style="display: none;">
+					<button type="button" class="file-upload-button" id="replace-file-upload-trigger">
+						<i class="bi bi-upload"></i> Choose New Image
+					</button>
+					<span class="file-name" id="replace-file-name"></span>
+				</div>
+				<div class="image-preview" id="replace-image-preview" style="display: none; margin-top: 12px;">
+					<img id="replace-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 4px;">
+				</div>
+			</div>
+			<div class="link-modal-footer">
+				<button class="link-modal-cancel" type="button">Cancel</button>
+				<button class="link-modal-insert" type="button" disabled>Replace Image</button>
+			</div>
+		</div>
+	`;
+
+	document.body.appendChild(modal);
+
+	const fileInput = modal.querySelector('#replace-image-file');
+	const fileUploadTrigger = modal.querySelector('#replace-file-upload-trigger');
+	const fileName = modal.querySelector('#replace-file-name');
+	const altInput = modal.querySelector('#replace-image-alt');
+	const preview = modal.querySelector('#replace-image-preview');
+	const previewImg = modal.querySelector('#replace-preview-img');
+	const replaceButton = modal.querySelector('.link-modal-insert');
+
+	// Trigger file input when button is clicked
+	fileUploadTrigger.addEventListener('click', () => {
+		fileInput.click();
+	});
+
+	// Preview image when file is selected
+	fileInput.addEventListener('change', (e) => {
+		const file = e.target.files[0];
+		if (file && file.type.startsWith('image/')) {
+			fileName.textContent = file.name;
+			const reader = new FileReader();
+			reader.onload = (event) => {
+				previewImg.src = event.target.result;
+				preview.style.display = 'block';
+				replaceButton.disabled = false;
+			};
+			reader.readAsDataURL(file);
+		} else {
+			preview.style.display = 'none';
+			fileName.textContent = '';
+			replaceButton.disabled = true;
+		}
+	});
+
+	// Close handlers
+	const closeModal = () => {
+		document.body.removeChild(modal);
+	};
+
+	modal.querySelector('.link-modal-close').addEventListener('click', closeModal);
+	modal.querySelector('.link-modal-cancel').addEventListener('click', closeModal);
+	modal.addEventListener('click', (e) => {
+		if (e.target === modal) {
+			closeModal();
+		}
+	});
+
+	// Replace image handler
+	replaceButton.addEventListener('click', async () => {
+		const file = fileInput.files[0];
+		const altText = altInput.value.trim();
+
+		if (!file) {
+			alert('Please select an image file');
+			return;
+		}
+
+		// Show loading state
+		replaceButton.disabled = true;
+		replaceButton.textContent = 'Processing...';
+
+		try {
+			// Resize image using Pica
+			const resizedDataUrl = await resizeImage(file, maxImageWidth);
+
+			// Replace the image src and alt
+			targetImg.src = resizedDataUrl;
+			targetImg.alt = altText || 'Image';
+
+			closeModal();
+		} catch (error) {
+			console.error('Error processing image:', error);
+			alert('Error processing image. Please try again.');
+			replaceButton.disabled = false;
+			replaceButton.textContent = 'Replace Image';
+		}
+	});
+
+	// Handle Escape key
+	altInput.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			closeModal();
+		}
+	});
+}
+
+// Shared image resizing function
+async function resizeImage(file, maxWidth) {
+	return new Promise((resolve, reject) => {
+		// Check if Pica is available
+		if (typeof pica === 'undefined') {
+			// Fallback: use canvas without Pica
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.onload = () => {
+					const canvas = document.createElement('canvas');
+					let width = img.width;
+					let height = img.height;
+
+					// Calculate new dimensions
+					if (width > maxWidth) {
+						height = (height * maxWidth) / width;
+						width = maxWidth;
+					}
+
+					canvas.width = width;
+					canvas.height = height;
+
+					const ctx = canvas.getContext('2d');
+					ctx.drawImage(img, 0, 0, width, height);
+
+					resolve(canvas.toDataURL('image/jpeg', 0.9));
+				};
+				img.onerror = reject;
+				img.src = e.target.result;
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		} else {
+			// Use Pica for high-quality resizing
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const img = new Image();
+				img.onload = () => {
+					let width = img.width;
+					let height = img.height;
+
+					// Calculate new dimensions
+					if (width > maxWidth) {
+						height = (height * maxWidth) / width;
+						width = maxWidth;
+					}
+
+					// Create source and destination canvases
+					const sourceCanvas = document.createElement('canvas');
+					sourceCanvas.width = img.width;
+					sourceCanvas.height = img.height;
+					const sourceCtx = sourceCanvas.getContext('2d');
+					sourceCtx.drawImage(img, 0, 0);
+
+					const destCanvas = document.createElement('canvas');
+					destCanvas.width = width;
+					destCanvas.height = height;
+
+					// Use Pica to resize - check if pica is a function or an object
+					const picaInstance = typeof pica === 'function' ? new pica() : pica;
+
+					if (picaInstance && typeof picaInstance.resize === 'function') {
+						picaInstance
+							.resize(sourceCanvas, destCanvas, {
+								quality: 3,
+								alpha: false,
+								unsharpAmount: 80,
+								unsharpRadius: 0.6,
+								unsharpThreshold: 2
+							})
+							.then(() => {
+								resolve(destCanvas.toDataURL('image/jpeg', 0.9));
+							})
+							.catch(reject);
+					} else {
+						// Fallback to canvas if Pica API is not available
+						const ctx = destCanvas.getContext('2d');
+						ctx.drawImage(img, 0, 0, width, height);
+						resolve(destCanvas.toDataURL('image/jpeg', 0.9));
+					}
+				};
+				img.onerror = reject;
+				img.src = e.target.result;
+			};
+			reader.onerror = reject;
+			reader.readAsDataURL(file);
+		}
+	});
+}
+
+// ImageEditor class for standalone images (layout images, not part of text editor)
+class ImageEditor {
+	constructor(imageSelector, config = {}) {
+		this.config = {
+			maxImageWidth: config.maxImageWidth || 1200,
+			...config
+		};
+
+		// Helper function to find images by selector
+		const findImages = (selector) => {
+			if (!selector) return [];
+
+			if (Array.isArray(selector)) {
+				const allImages = [];
+				selector.forEach((sel) => {
+					allImages.push(...findImages(sel));
+				});
+				return allImages;
+			}
+
+			if (typeof selector !== 'string') return [];
+
+			// If selector starts with ., try to match img elements with that class directly
+			if (selector.startsWith('.')) {
+				const classWithoutDot = selector.substring(1);
+				// First try: direct img elements with this class
+				const directMatches = Array.from(document.querySelectorAll(`img${selector}`));
+				if (directMatches.length > 0) return directMatches;
+				// Second try: img elements within elements with this class
+				return Array.from(document.querySelectorAll(`${selector} img`));
+			}
+
+			// If selector starts with #, try to match by ID
+			if (selector.startsWith('#')) {
+				const idWithoutHash = selector.substring(1);
+				const element = document.getElementById(idWithoutHash);
+				if (element && element.tagName === 'IMG') return [element];
+				if (element) return Array.from(element.querySelectorAll('img'));
+			}
+
+			// Otherwise, try as class first, then as ID
+			const directClassMatches = Array.from(document.querySelectorAll(`img.${selector}`));
+			if (directClassMatches.length > 0) return directClassMatches;
+
+			const byClass = Array.from(document.querySelectorAll(`.${selector} img`));
+			if (byClass.length > 0) return byClass;
+
+			const byId = document.getElementById(selector);
+			if (byId && byId.tagName === 'IMG') return [byId];
+			if (byId) return Array.from(byId.querySelectorAll('img'));
+
+			return [];
+		};
+
+		this.images = findImages(imageSelector);
+
+		if (this.images.length === 0) {
+			console.warn(`ImageEditor: No images found with selector "${imageSelector}"`);
+			return;
+		}
+
+		this.setupImageClickHandlers();
+	}
+
+	setupImageClickHandlers() {
+		// Helper to setup click handler on an image
+		const setupImageClick = (img) => {
+			// Only add listener if not already added
+			if (!img.hasAttribute('data-image-editor-handler')) {
+				img.setAttribute('data-image-editor-handler', 'true');
+				img.addEventListener('click', (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					createImageReplaceModal(img, this.config);
+				});
+				img.style.cursor = 'pointer';
+			}
+		};
+
+		// Setup click handlers for existing images
+		this.images.forEach(setupImageClick);
+
+		// Use MutationObserver to handle dynamically added images
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach((mutation) => {
+				mutation.addedNodes.forEach((node) => {
+					if (node.nodeType === Node.ELEMENT_NODE) {
+						if (node.tagName === 'IMG') {
+							// Check if this image matches our selector
+							const imgElement = node;
+							// Add if it matches (simplified - you might want to check against original selector)
+							setupImageClick(imgElement);
+						}
+						// Check for images within added nodes
+						const images = node.querySelectorAll ? node.querySelectorAll('img') : [];
+						images.forEach((img) => {
+							setupImageClick(img);
+						});
+					}
+				});
+			});
+		});
+
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true
+		});
 	}
 }

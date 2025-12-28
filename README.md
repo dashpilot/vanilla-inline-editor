@@ -9,6 +9,7 @@ A lightweight, vanilla JavaScript inline rich text editor with a floating toolba
 - **Links**: Insert and edit links with a modal dialog
 - **Block Elements**: Insert headings, paragraphs, and images via the plus button
 - **Image Upload**: Upload and resize images automatically (uses Pica library)
+- **Standalone Image Editor**: Separate `ImageEditor` class for editing layout images (click to replace)
 - **Keyboard Shortcuts**: Standard shortcuts for common formatting commands
 - **Zero Dependencies**: Pure vanilla JavaScript (uses Bootstrap Icons via CDN)
 
@@ -59,6 +60,32 @@ const editor = new InlineRichTextEditor('#editor', null, {
 - If you pass a selector without a prefix (`#` for ID or `.` for class), it will first try to find an element by ID, then by class name for backwards compatibility.
 - When using an array of selectors, each selector is tried in order until a matching element is found. This is useful for providing fallback selectors.
 - The toolbar uses fixed positioning, so it can be placed anywhere in the DOM and will still appear correctly above selected text.
+
+### Standalone Image Editor
+
+For images that are part of the page layout (not within editable text content), use the `ImageEditor` class:
+
+```javascript
+// Initialize standalone image editor for layout images
+const imageEditor = new ImageEditor('.image');
+
+// Or with custom configuration
+const imageEditor = new ImageEditor('.image', {
+	maxImageWidth: 1200 // Maximum image width for resizing
+});
+```
+
+This allows users to click on images to replace them without making the images part of a text editor. Perfect for card images, hero images, or any standalone images in your layout.
+
+**Example**: Combining both editors for a card-based layout:
+
+```javascript
+// Text content is editable
+const editor = new InlineRichTextEditor('.card-content');
+
+// Images are separately editable (click to replace)
+const imageEditor = new ImageEditor('.image');
+```
 
 ## Requirements
 
