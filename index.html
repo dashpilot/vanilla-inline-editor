@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Inline Rich Text Editor</title>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+		/>
+		<link rel="stylesheet" href="styles.css" />
+		<script src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js"></script>
+	</head>
+	<body>
+		<div class="editor-container">
+			<div class="editor-content" contenteditable="true" id="editor" spellcheck="false">
+				<p>Start typing here... Select text to see the formatting toolbar appear.</p>
+			</div>
+		</div>
+		<div class="editor-toolbar" id="toolbar"></div>
+		<script src="script.js"></script>
+	</body>
+</html>
