@@ -21,20 +21,23 @@ Simply open `index.html` in your browser. The editor is initialized automaticall
 The editor can be initialized with ID selectors, class selectors, or an array of selectors:
 
 ```javascript
-// Using IDs (backwards compatible)
-const editor = new InlineRichTextEditor('editor', 'toolbar');
+// Toolbar is created dynamically - only editor selector is required
+const editor = new InlineRichTextEditor('editor');
 
-// Using class selectors with dot notation
-const editor = new InlineRichTextEditor('.editor-content', '.editor-toolbar');
+// Using class selectors
+const editor = new InlineRichTextEditor('.editor-content');
 
 // Using ID selectors with hash notation
-const editor = new InlineRichTextEditor('#editor', '#toolbar');
+const editor = new InlineRichTextEditor('#editor');
 
-// Using an array of selectors (tries each one until a match is found)
-const editor = new InlineRichTextEditor(
-	['.editor-content', '#editor', 'editor'],
-	['.editor-toolbar', '#toolbar']
-);
+// Using an array of selectors for the editor (tries each one until a match is found)
+const editor = new InlineRichTextEditor(['.editor-content', '#editor', 'editor']);
+
+// Optional: Provide a toolbar selector if you want to use an existing toolbar element
+const editor = new InlineRichTextEditor('editor', '.custom-toolbar');
+
+// If toolbar selector doesn't exist, it will be created automatically with the specified class/id
+const editor = new InlineRichTextEditor('editor', '#my-toolbar');
 ```
 
 ### Customization
@@ -42,16 +45,18 @@ const editor = new InlineRichTextEditor(
 To customize the editor, pass a configuration object:
 
 ```javascript
-const editor = new InlineRichTextEditor('#editor', '#toolbar', {
+const editor = new InlineRichTextEditor('#editor', null, {
     buttons: [...], // Custom button configuration
     maxImageWidth: 1200 // Maximum image width for resizing
 });
 ```
 
-**Note**:
+**Notes**:
 
+- The toolbar selector is **optional**. If not provided or not found, the toolbar will be created dynamically and appended to the document body.
 - If you pass a selector without a prefix (`#` for ID or `.` for class), it will first try to find an element by ID, then by class name for backwards compatibility.
 - When using an array of selectors, each selector is tried in order until a matching element is found. This is useful for providing fallback selectors.
+- The toolbar uses fixed positioning, so it can be placed anywhere in the DOM and will still appear correctly above selected text.
 
 ## Requirements
 

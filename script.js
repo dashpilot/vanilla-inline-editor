@@ -33,16 +33,37 @@ class InlineRichTextEditor {
 		};
 
 		this.editor = findElement(editorSelector);
-		this.toolbar = findElement(toolbarSelector);
 
 		if (!this.editor) {
 			console.error(`Editor element with selector "${editorSelector || 'undefined'}" not found`);
 			return;
 		}
 
+		// Try to find existing toolbar, or create it dynamically
+		this.toolbar = findElement(toolbarSelector);
+
 		if (!this.toolbar) {
-			console.error(`Toolbar element with selector "${toolbarSelector || 'undefined'}" not found`);
-			return;
+			// Create toolbar dynamically
+			this.toolbar = document.createElement('div');
+			this.toolbar.className = 'editor-toolbar';
+
+			// If a selector was provided, try to extract ID or class from it
+			if (toolbarSelector) {
+				const selector = Array.isArray(toolbarSelector) ? toolbarSelector[0] : toolbarSelector;
+				if (typeof selector === 'string') {
+					if (selector.startsWith('#')) {
+						this.toolbar.id = selector.substring(1);
+					} else if (selector.startsWith('.')) {
+						this.toolbar.className = `editor-toolbar ${selector.substring(1)}`;
+					} else {
+						// Try as ID first
+						this.toolbar.id = selector;
+					}
+				}
+			}
+
+			// Append to body since toolbar uses fixed positioning
+			document.body.appendChild(this.toolbar);
 		}
 
 		this.config = {
