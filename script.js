@@ -2,6 +2,11 @@ class InlineRichTextEditor {
 	constructor(editorSelector, toolbarSelector, config = {}) {
 		// Helper function to find element by ID, class selector, or array of selectors
 		const findElement = (selector) => {
+			// Handle null/undefined
+			if (!selector) {
+				return null;
+			}
+
 			// If selector is an array, try each one until we find a match
 			if (Array.isArray(selector)) {
 				for (const sel of selector) {
@@ -10,6 +15,12 @@ class InlineRichTextEditor {
 						return element;
 					}
 				}
+				return null;
+			}
+
+			// Ensure selector is a string
+			if (typeof selector !== 'string') {
+				console.warn('Selector must be a string or array of strings');
 				return null;
 			}
 
@@ -25,12 +36,12 @@ class InlineRichTextEditor {
 		this.toolbar = findElement(toolbarSelector);
 
 		if (!this.editor) {
-			console.error(`Editor element with selector "${editorSelector}" not found`);
+			console.error(`Editor element with selector "${editorSelector || 'undefined'}" not found`);
 			return;
 		}
 
 		if (!this.toolbar) {
-			console.error(`Toolbar element with selector "${toolbarSelector}" not found`);
+			console.error(`Toolbar element with selector "${toolbarSelector || 'undefined'}" not found`);
 			return;
 		}
 
