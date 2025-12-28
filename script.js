@@ -1751,23 +1751,3 @@ class InlineRichTextEditor {
 		this.toolbar.style.display = 'none';
 	}
 }
-
-// Initialize the editor when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-	const editor = new InlineRichTextEditor('editor', 'toolbar');
-
-	// Example: You can customize the buttons by passing a config
-	// const customEditor = new InlineRichTextEditor('editor', 'toolbar', {
-	//     buttons: [
-	//         {
-	//             type: 'button',
-	//             id: 'bold',
-	//             label: 'B',
-	//             icon: 'bi-type-bold',
-	//             tooltip: 'Bold',
-	//             action: () => editor.formatText('bold'),
-	//             command: 'bold'
-	//         }
-	//     ]
-	// });
-});
