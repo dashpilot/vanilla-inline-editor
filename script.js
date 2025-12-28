@@ -1,4 +1,4 @@
-class InlineRichTextEditor {
+class VanillaInline {
 	constructor(editorSelector, toolbarSelector, config = {}) {
 		// Helper function to find element by ID, class selector, or array of selectors
 		const findElement = (selector) => {
@@ -2172,8 +2172,8 @@ async function resizeImage(file, maxWidth) {
 	});
 }
 
-// ImageEditor class for standalone images (layout images, not part of text editor)
-class ImageEditor {
+// VanillaImage class for standalone images (layout images, not part of text editor)
+class VanillaImage {
 	constructor(imageSelector, config = {}) {
 		this.config = {
 			maxImageWidth: config.maxImageWidth || 1200,
@@ -2229,7 +2229,7 @@ class ImageEditor {
 		this.images = findImages(imageSelector);
 
 		if (this.images.length === 0) {
-			console.warn(`ImageEditor: No images found with selector "${imageSelector}"`);
+			console.warn(`VanillaImage: No images found with selector "${imageSelector}"`);
 			return;
 		}
 

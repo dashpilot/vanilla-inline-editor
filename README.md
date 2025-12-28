@@ -9,7 +9,7 @@ A lightweight, vanilla JavaScript inline rich text editor with a floating toolba
 - **Links**: Insert and edit links with a modal dialog
 - **Block Elements**: Insert headings, paragraphs, and images via the plus button
 - **Image Upload**: Upload and resize images automatically (uses Pica library)
-- **Standalone Image Editor**: Separate `ImageEditor` class for editing layout images (click to replace)
+- **Standalone Image Editor**: Separate `VanillaImage` class for editing layout images (click to replace)
 - **Keyboard Shortcuts**: Standard shortcuts for common formatting commands
 - **Zero Dependencies**: Pure vanilla JavaScript (uses Bootstrap Icons via CDN)
 
@@ -23,22 +23,22 @@ The editor can be initialized with ID selectors, class selectors, or an array of
 
 ```javascript
 // Toolbar is created dynamically - only editor selector is required
-const editor = new InlineRichTextEditor('editor');
+const editor = new VanillaInline('editor');
 
 // Using class selectors
-const editor = new InlineRichTextEditor('.editor-content');
+const editor = new VanillaInline('.editor-content');
 
 // Using ID selectors with hash notation
-const editor = new InlineRichTextEditor('#editor');
+const editor = new VanillaInline('#editor');
 
 // Using an array of selectors for the editor (tries each one until a match is found)
-const editor = new InlineRichTextEditor(['.editor-content', '#editor', 'editor']);
+const editor = new VanillaInline(['.editor-content', '#editor', 'editor']);
 
 // Optional: Provide a toolbar selector if you want to use an existing toolbar element
-const editor = new InlineRichTextEditor('editor', '.custom-toolbar');
+const editor = new VanillaInline('editor', '.custom-toolbar');
 
 // If toolbar selector doesn't exist, it will be created automatically with the specified class/id
-const editor = new InlineRichTextEditor('editor', '#my-toolbar');
+const editor = new VanillaInline('editor', '#my-toolbar');
 ```
 
 ### Customization
@@ -46,7 +46,7 @@ const editor = new InlineRichTextEditor('editor', '#my-toolbar');
 To customize the editor, pass a configuration object:
 
 ```javascript
-const editor = new InlineRichTextEditor('#editor', null, {
+const editor = new VanillaInline('#editor', null, {
     buttons: [...], // Custom button configuration
     maxImageWidth: 1200 // Maximum image width for resizing
 });
@@ -63,14 +63,14 @@ const editor = new InlineRichTextEditor('#editor', null, {
 
 ### Standalone Image Editor
 
-For images that are part of the page layout (not within editable text content), use the `ImageEditor` class:
+For images that are part of the page layout (not within editable text content), use the `VanillaImage` class:
 
 ```javascript
 // Initialize standalone image editor for layout images
-const imageEditor = new ImageEditor('.image');
+const imageEditor = new VanillaImage('.image');
 
 // Or with custom configuration
-const imageEditor = new ImageEditor('.image', {
+const imageEditor = new VanillaImage('.image', {
 	maxImageWidth: 1200 // Maximum image width for resizing
 });
 ```
@@ -81,10 +81,10 @@ This allows users to click on images to replace them without making the images p
 
 ```javascript
 // Text content is editable
-const editor = new InlineRichTextEditor('.card-content');
+const editor = new VanillaInline('.card-content');
 
 // Images are separately editable (click to replace)
-const imageEditor = new ImageEditor('.image');
+const imageEditor = new VanillaImage('.image');
 ```
 
 ## Requirements
