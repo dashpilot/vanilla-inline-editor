@@ -76,6 +76,7 @@ class VanillaInline {
 		this.config = {
 			buttons: config.buttons || this.getDefaultButtons(),
 			maxImageWidth: config.maxImageWidth || 1200,
+			showPlusButton: config.showPlusButton !== undefined ? config.showPlusButton : true,
 			...config
 		};
 
@@ -717,17 +718,18 @@ class VanillaInline {
 	}
 
 	setupImageClickHandlers() {
-		// Helper to setup click handler on an image
+		// Helper to setup double-click handler on an image
 		const setupImageClick = (img) => {
 			// Only add listener if not already added
 			if (!img.hasAttribute('data-image-click-handler')) {
 				img.setAttribute('data-image-click-handler', 'true');
-				img.addEventListener('click', (e) => {
+				img.addEventListener('dblclick', (e) => {
 					e.preventDefault();
 					e.stopPropagation();
 					this.showImageReplaceModal(img);
 				});
 				img.style.cursor = 'pointer';
+				img.title = 'Double-click to replace image';
 			}
 		};
 
@@ -1127,12 +1129,13 @@ class VanillaInline {
 				img.contentEditable = 'false';
 				img.setAttribute('data-image-click-handler', 'true');
 
-				// Add click handler for replacement
-				img.addEventListener('click', (e) => {
+				// Add double-click handler for replacement
+				img.addEventListener('dblclick', (e) => {
 					e.preventDefault();
 					e.stopPropagation();
 					this.showImageReplaceModal(img);
 				});
+				img.title = 'Double-click to replace image';
 
 				// Insert after the target element
 				if (targetElement.parentNode) {
@@ -1199,6 +1202,12 @@ class VanillaInline {
 	}
 
 	checkAndShowPlusButton() {
+		// Don't show plus button if it's disabled in config
+		if (!this.config.showPlusButton) {
+			this.hidePlusButton();
+			return;
+		}
+
 		// Don't show plus button if toolbar is visible (text is selected)
 		if (this.toolbar.classList.contains('visible')) {
 			this.hidePlusButton();
@@ -2237,17 +2246,18 @@ class VanillaImage {
 	}
 
 	setupImageClickHandlers() {
-		// Helper to setup click handler on an image
+		// Helper to setup double-click handler on an image
 		const setupImageClick = (img) => {
 			// Only add listener if not already added
 			if (!img.hasAttribute('data-image-editor-handler')) {
 				img.setAttribute('data-image-editor-handler', 'true');
-				img.addEventListener('click', (e) => {
+				img.addEventListener('dblclick', (e) => {
 					e.preventDefault();
 					e.stopPropagation();
 					createImageReplaceModal(img, this.config);
 				});
 				img.style.cursor = 'pointer';
+				img.title = 'Double-click to replace image';
 			}
 		};
 

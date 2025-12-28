@@ -48,7 +48,8 @@ To customize the editor, pass a configuration object:
 ```javascript
 const editor = new VanillaInline('#editor', null, {
     buttons: [...], // Custom button configuration
-    maxImageWidth: 1200 // Maximum image width for resizing
+    maxImageWidth: 1200, // Maximum image width for resizing
+    showPlusButton: true // Enable/disable the '+' button for adding new blocks (default: true)
 });
 ```
 
