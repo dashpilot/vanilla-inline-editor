@@ -2,6 +2,8 @@
 
 A lightweight, vanilla JavaScript inline rich text editor with a floating toolbar that appears when text is selected.
 
+![Preview](img/preview.png)
+
 ## Features
 
 - **Floating Toolbar**: Appears above selected text for quick formatting
