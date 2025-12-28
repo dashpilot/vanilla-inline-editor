@@ -54,6 +54,8 @@ const editor = new InlineRichTextEditor('#editor', null, {
 **Notes**:
 
 - The toolbar selector is **optional**. If not provided or not found, the toolbar will be created dynamically and appended to the document body.
+- **Editor elements are automatically configured**: When you provide an editor selector, the editor automatically sets `contentEditable="true"` and `spellcheck="false"` on the matching element(s). You don't need to set these attributes in your HTML.
+- When using a **class selector** (starting with `.`), all matching elements will be made editable. The first element will be used as the primary editor for toolbar interactions.
 - If you pass a selector without a prefix (`#` for ID or `.` for class), it will first try to find an element by ID, then by class name for backwards compatibility.
 - When using an array of selectors, each selector is tried in order until a matching element is found. This is useful for providing fallback selectors.
 - The toolbar uses fixed positioning, so it can be placed anywhere in the DOM and will still appear correctly above selected text.

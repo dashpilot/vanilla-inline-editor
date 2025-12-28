@@ -39,6 +39,9 @@ class InlineRichTextEditor {
 			return;
 		}
 
+		// Automatically set contentEditable and spellcheck on the editor element(s)
+		this.setupEditorElement(editorSelector);
+
 		// Try to find existing toolbar, or create it dynamically
 		this.toolbar = findElement(toolbarSelector);
 
@@ -76,6 +79,57 @@ class InlineRichTextEditor {
 		this.plusMenu = null;
 		this.injectEditorStyles();
 		this.init();
+	}
+
+	setupEditorElement(editorSelector) {
+		// Helper function to find all elements matching a selector
+		const findAllElements = (selector) => {
+			// Handle null/undefined
+			if (!selector) {
+				return [];
+			}
+
+			// If selector is an array, use the first one that matches
+			if (Array.isArray(selector)) {
+				for (const sel of selector) {
+					const elements = findAllElements(sel);
+					if (elements.length > 0) {
+						return elements;
+					}
+				}
+				return [];
+			}
+
+			// Ensure selector is a string
+			if (typeof selector !== 'string') {
+				return [];
+			}
+
+			// If selector starts with #, use getElementById (single element)
+			if (selector.startsWith('#')) {
+				const element = document.getElementById(selector.substring(1));
+				return element ? [element] : [];
+			}
+
+			// If selector starts with ., use querySelectorAll to find all matching elements
+			if (selector.startsWith('.')) {
+				return Array.from(document.querySelectorAll(selector));
+			}
+
+			// Otherwise, try as ID first, then as class
+			const byId = document.getElementById(selector);
+			if (byId) {
+				return [byId];
+			}
+			return Array.from(document.querySelectorAll(`.${selector}`));
+		};
+
+		// Find all elements matching the selector and make them editable
+		const elements = findAllElements(editorSelector);
+		elements.forEach((element) => {
+			element.setAttribute('contenteditable', 'true');
+			element.setAttribute('spellcheck', 'false');
+		});
 	}
 
 	injectEditorStyles() {
