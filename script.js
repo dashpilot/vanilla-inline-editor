@@ -1,15 +1,36 @@
 class InlineRichTextEditor {
-	constructor(editorId, toolbarId, config = {}) {
-		this.editor = document.getElementById(editorId);
-		this.toolbar = document.getElementById(toolbarId);
+	constructor(editorSelector, toolbarSelector, config = {}) {
+		// Helper function to find element by ID, class selector, or array of selectors
+		const findElement = (selector) => {
+			// If selector is an array, try each one until we find a match
+			if (Array.isArray(selector)) {
+				for (const sel of selector) {
+					const element = findElement(sel);
+					if (element) {
+						return element;
+					}
+				}
+				return null;
+			}
+
+			// If selector starts with # or ., use querySelector directly
+			if (selector.startsWith('#') || selector.startsWith('.')) {
+				return document.querySelector(selector);
+			}
+			// Otherwise, try as ID first, then as class for backwards compatibility
+			return document.getElementById(selector) || document.querySelector(`.${selector}`);
+		};
+
+		this.editor = findElement(editorSelector);
+		this.toolbar = findElement(toolbarSelector);
 
 		if (!this.editor) {
-			console.error(`Editor element with id "${editorId}" not found`);
+			console.error(`Editor element with selector "${editorSelector}" not found`);
 			return;
 		}
 
 		if (!this.toolbar) {
-			console.error(`Toolbar element with id "${toolbarId}" not found`);
+			console.error(`Toolbar element with selector "${toolbarSelector}" not found`);
 			return;
 		}
 
