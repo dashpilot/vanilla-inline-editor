@@ -36,11 +36,15 @@ const editor = new VanillaInline('#editor');
 // Using an array of selectors for the editor (tries each one until a match is found)
 const editor = new VanillaInline(['.editor-content', '#editor', 'editor']);
 
-// Optional: Provide a toolbar selector if you want to use an existing toolbar element
-const editor = new VanillaInline('editor', '.custom-toolbar');
+// Optional: Provide a toolbar selector in the config if you want to use an existing toolbar element
+const editor = new VanillaInline('editor', {
+	toolbarSelector: '.custom-toolbar'
+});
 
 // If toolbar selector doesn't exist, it will be created automatically with the specified class/id
-const editor = new VanillaInline('editor', '#my-toolbar');
+const editor = new VanillaInline('editor', {
+	toolbarSelector: '#my-toolbar'
+});
 ```
 
 ### Customization
@@ -48,7 +52,8 @@ const editor = new VanillaInline('editor', '#my-toolbar');
 To customize the editor, pass a configuration object:
 
 ```javascript
-const editor = new VanillaInline('#editor', null, {
+const editor = new VanillaInline('#editor', {
+    toolbarSelector: '.custom-toolbar', // Optional: Use existing toolbar element
     buttons: [...], // Custom button configuration
     maxImageWidth: 1200, // Maximum image width for resizing
     showPlusButton: true // Enable/disable the '+' button for adding new blocks (default: true)
@@ -57,7 +62,7 @@ const editor = new VanillaInline('#editor', null, {
 
 **Notes**:
 
-- The toolbar selector is **optional**. If not provided or not found, the toolbar will be created dynamically and appended to the document body.
+- The toolbar selector (`toolbarSelector` in config) is **optional**. If not provided or not found, the toolbar will be created dynamically and appended to the document body.
 - **Editor elements are automatically configured**: When you provide an editor selector, the editor automatically sets `contentEditable="true"` and `spellcheck="false"` on the matching element(s). You don't need to set these attributes in your HTML.
 - When using a **class selector** (starting with `.`), all matching elements will be made editable. The first element will be used as the primary editor for toolbar interactions.
 - If you pass a selector without a prefix (`#` for ID or `.` for class), it will first try to find an element by ID, then by class name for backwards compatibility.

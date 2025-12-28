@@ -1,5 +1,5 @@
 class VanillaInline {
-	constructor(editorSelector, toolbarSelector, config = {}) {
+	constructor(editorSelector, config = {}) {
 		// Helper function to find element by ID, class selector, or array of selectors
 		const findElement = (selector) => {
 			// Handle null/undefined
@@ -45,6 +45,9 @@ class VanillaInline {
 		if (!this.editorElements || this.editorElements.length === 0) {
 			this.editorElements = [this.editor];
 		}
+
+		// Get toolbar selector from config
+		const toolbarSelector = config.toolbarSelector;
 
 		// Try to find existing toolbar, or create it dynamically
 		this.toolbar = findElement(toolbarSelector);

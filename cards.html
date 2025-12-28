@@ -62,7 +62,7 @@
 			// Initialize the editor when DOM is ready
 			document.addEventListener('DOMContentLoaded', () => {
 				// Text content is editable (without the '+' button)
-				const editor = new VanillaInline('.card-content', null, {
+				const editor = new VanillaInline('.card-content', {
 					showPlusButton: false
 				});
 
