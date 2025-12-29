@@ -56,7 +56,7 @@ const editor = new VanillaInline('#editor', {
     toolbarSelector: '.custom-toolbar', // Optional: Use existing toolbar element
     buttons: [...], // Custom button configuration
     maxImageWidth: 1200, // Maximum image width for resizing
-    showPlusButton: true // Enable/disable the '+' button for adding new blocks (default: true)
+    showPlusButton: true // Enable/disable the '+' button for adding new blocks (default: false)
 });
 ```
 

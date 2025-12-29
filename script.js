@@ -79,7 +79,7 @@ class VanillaInline {
 		this.config = {
 			buttons: config.buttons || this.getDefaultButtons(),
 			maxImageWidth: config.maxImageWidth || 1200,
-			showPlusButton: config.showPlusButton !== undefined ? config.showPlusButton : true,
+			showPlusButton: config.showPlusButton !== undefined ? config.showPlusButton : false,
 			...config
 		};
 
